@@ -1,0 +1,128 @@
+# Copyright (c) 2010-2021, Lawrence Livermore National Security, LLC. Produced
+# at the Lawrence Livermore National Laboratory. All Rights reserved. See files
+# LICENSE and NOTICE for details. LLNL-CODE-806117.
+#
+# This file is part of the MFEM library. For more information and source code
+# availability visit https://mfem.org.
+#
+# MFEM is free software; you can redistribute it and/or modify it under the
+# terms of the BSD-3 license. We welcome feedback and contributions, see file
+# CONTRIBUTING.md for details.
+
+name: build-mfem
+
+inputs:
+  os:
+    description: 'os'
+    required: true
+  target:
+    description: 'Type of target (dbg, opt)'
+    required: false
+    default: opt
+  mpi:
+    description: 'MPI status'
+    required: false
+    default: par
+  codecov:
+    description: 'Codecov status'
+    required: false
+    default: NO
+  hypre-dir:
+    description: 'hypre install location working dir'
+    required: true
+  metis-dir:
+    description: 'metis install location working dir'
+    required: true
+  mfem-repo:
+    description: 'Repo url for MFEM'
+    required: false
+    default: 'https://github.com/mfem/mfem.git'
+  mfem-branch:
+    description: 'Branch to checkout'
+    required: false
+    default: ''
+  mfem-dir:
+    description: 'mfem repo checkout location in working dir'
+    required: true
+  build-system:
+    description: 'identify the build system to use (make,cmake)'
+    required: false
+    default: make
+
+runs:
+  using: "composite"
+  steps:
+    - name: configure mfem
+      run: |
+        echo "----------------------------"
+        echo "--- Download source code ---"
+        if [[ -n "${{ inputs.mfem-branch }}" ]]; then
+          if [[ -d ${{ inputs.mfem-dir }} ]]; then
+            echo "Error: Unknown use case"
+            echo " Trying to change MFEM branch while MFEM is already present."
+            echo " The use case supported are:"
+            echo "  - MFEM CI: Use MFEM source checked out by Github."
+            echo "  - MiniApp CI: Clone MFEM using a specific branch."
+            exit 1;
+          fi
+          git clone --single-branch --branch ${{ inputs.mfem-branch }} --depth 1 ${{ inputs.mfem-repo }} ${{ inputs.mfem-dir }};
+          echo "[INFO] MFEM clone: using ${{ inputs.mfem-branch }} branch"
+        fi
+        echo "-----------------------------"
+        echo "--- Prepare Configuration ---"
+        MPI="NO"
+        if [[ ${{ inputs.mpi }} == 'par' ]]; then
+          MPI="YES"
+          echo "[INFO] Hypre symlink: hypre -> ${{ inputs.hypre-dir }}"
+          ln -s -f ${{ inputs.hypre-dir }} hypre;
+          echo "[INFO] Metis symlink: metis -> ${{ inputs.metis-dir }}"
+          ln -s -f ${{ inputs.metis-dir }} metis-4.0;
+        fi
+        echo "[STATUS] MPI: ${MPI}"
+        CPPFLAGS=""
+        DEBUG="NO"
+        BUILD_TYPE="Release"
+        if [[ ${{ inputs.target }} == 'dbg' ]]; then
+          DEBUG="YES";
+          BUILD_TYPE="Debug";
+        fi
+        if [[ ${{ runner.os }} != 'Linux' || \
+              ${{ inputs.target }} == 'dbg' ]]; then
+          CPPFLAGS+=" -pedantic -Wall -Werror";
+        fi
+        echo "[STATUS] DEBUG: ${DEBUG}"
+        echo "[STATUS] BUILD_TYPE: ${BUILD_TYPE}"
+        if [[ ${{ inputs.codecov }} == 'YES' ]]; then
+          CPPFLAGS+=" --coverage -fPIC -g";
+        fi
+        echo "[STATUS] CPPFLAGS: ${CPPFLAGS}"
+        echo "----------------------"
+        echo "--- Configure mfem ---"
+        cd ${{ inputs.mfem-dir }};
+        if [[ ${{ inputs.build-system }} == 'cmake' ]]; then
+            mkdir build && cd build;
+            cmake \
+              -D CMAKE_BUILD_TYPE=${BUILD_TYPE} \
+              -D MFEM_USE_MPI=${MPI} \
+              -D MFEM_MPI_NP=2 \
+              -D HYPRE_DIR=../../hypre/src/hypre \
+              ..
+        else
+            make config MFEM_USE_MPI=${MPI} MFEM_MPI_NP=2 MFEM_DEBUG=${DEBUG} CPPFLAGS="${CPPFLAGS}";
+        fi
+      shell: bash
+
+    - name: build mfem
+      run: |
+        echo "------------------"
+        echo "--- Build mfem ---"
+        cd ${{ inputs.mfem-dir }}
+        if [[ ${{ inputs.build-system }} == 'cmake' ]]; then
+            cd build
+            make -j3 mfem examples
+            cd tests/unit
+            make -j3
+        else
+            make all -j3
+        fi
+      shell: bash

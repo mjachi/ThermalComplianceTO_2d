@@ -1,0 +1,174 @@
+\documentclass{amsart}
+
+\usepackage{subfiles}
+
+% Packages
+\usepackage{mathtools}
+\usepackage{amssymb,bm,bbold}
+\usepackage{enumerate}
+\usepackage{lipsum}
+\usepackage[dvipsnames]{xcolor}
+
+% hyperref
+\usepackage{hyperref}
+\usepackage{cleveref}
+\newcommand\myshade{90}
+\colorlet{mylinkcolor}{NavyBlue}
+\colorlet{mycitecolor}{Aquamarine}
+\colorlet{myurlcolor}{Aquamarine}
+
+\hypersetup{
+  linkcolor  = mylinkcolor!\myshade!black,
+  citecolor  = mycitecolor!\myshade!black,
+  urlcolor   = myurlcolor!\myshade!black,
+  colorlinks = true,
+}
+
+% Bibliography
+\usepackage[
+backend=biber,
+style=alphabetic,
+sorting=ynt
+]{biblatex}
+
+\addbibresource{bibliography.bib}
+
+% counters
+\newcounter{example}[section]
+\newenvironment{example}[1][]{\refstepcounter{example}\par\medskip
+   \noindent \textbf{Example~\theexample. #1} \rmfamily}{\medskip}
+\newcounter{definition}[section]
+\newenvironment{definition}[1][]{\refstepcounter{definition}\par\medskip
+   \noindent \textbf{Definition~\thedefinition. #1} \rmfamily}{\medskip}
+\newcounter{question}[section]
+\newenvironment{question}[1][]{\refstepcounter{question}\par\medskip
+   \noindent \textbf{Question~\thequestion. #1} \rmfamily}{\medskip}
+
+% theorem environments
+\usepackage{amsthm}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{problem}{Problem}
+\newenvironment{solution}{\paragraph{\textit{Solution}}}{\hfill$\square$}
+
+\usepackage{listings}
+
+% convenient notations
+\newcommand{\NN}{\mathbb{N}} % Naturals
+\newcommand{\CC}{\mathbb{C}} % Complex numbers
+\newcommand{\QQ}{\mathbb{Q}} % Rationals
+\newcommand{\RR}{\mathbb{R}} % Reals
+\newcommand{\ZZ}{\mathbb{Z}} % Integers
+\newcommand{\EE}{\mathbb{E}} % Expectation
+\newcommand{\PP}{\mathbb{P}} % Probability
+\newcommand{\Epsilon}{\mathcal{E}}
+\newcommand{\nsum}{\sum_{i=1}^n}
+
+\newcommand{\floor}[1]{\left\lfloor{#1}\right\rfloor}
+\newcommand{\ceil}[1]{\left\lceil{#1}\right\rceil}
+\newcommand{\norm}[1]{\left\lVert{#1}\right\rVert}
+\newcommand{\diff}{\operatorname{diff }}
+\newcommand{\disc}{\operatorname{disc }}
+\newcommand{\ord}{\operatorname{ord}}
+\newcommand{\lcm}{\operatorname{lcm}}
+\newcommand{\del}{\partial}
+\newcommand{\emp}{\varnothing}
+\newcommand{\divides}{\,|\,}
+\newcommand{\op}[1]{\operatorname{#1}}
+\newcommand{\mf}[1]{\mathfrak{#1}}
+\newcommand{\mc}[1]{\mathcal{#1}}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% Typography, change document font
+\usepackage[tt=false, type1=true]{libertine}
+\usepackage[varqu]{zi4}
+\usepackage[T1]{fontenc}
+
+%%
+%% Julia definition (c) 2014 Jubobs
+%%
+
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\lstdefinelanguage{Julia}
+  {morekeywords={abstract,break,case,catch,const,continue,do,else,elseif,%
+      end,export,false,for,function,immutable,import,importall,if,in,%
+      macro,module,otherwise,quote,return,switch,true,try,type,typealias,%
+      using,while},
+   sensitive=true,
+   alsoother={$},
+   morecomment=[l]\#,
+   morecomment=[n]{\#=}{=\#},
+   morestring=[s]{"}{"},
+   morestring=[m]{'}{'},
+}[keywords,comments,strings]
+
+\lstset{
+    language          = Julia,
+    backgroundcolor   = \color{white},
+    basicstyle        = \ttfamily\tiny,
+    keywordstyle      = \bfseries\color{MidnightBlue},
+    stringstyle       = \color{Cerulean},
+    commentstyle      = \color{Gray},
+    numberstyle       = \tiny\color{Gray},
+    breakatwhitespace = false,
+    captionpos        = t,
+    numbers           = left,
+    numbersep         = 5pt,
+    showspaces        = false,
+    showstringspaces  = false,
+    showtabs          = false,
+    tabsize           = 2,
+}
+
+% Disable paragraph indentation, and increase gap
+\usepackage{parskip}
+
+\title{APMA2560 Final Project: Topology Optimization}
+\author{Matthew Meeker}
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+Briefly, topology optimization offers a class of techniques and algorithms for discovering the optimal distribution of
+material within a given domain, subject to some set of physics and other constraints, which tend to form
+PDE-constrained optimization problems. In general, these problems take the form
+\begin{equation}
+    \begin{aligned}
+        \min_{\rho} &\quad F:=\int_\Omega f(u(\rho), \rho)\mathrm{d}V\\
+        \text{s.t.} &\quad \int_\Omega \rho \mathrm{d}V \leq \theta V(\Omega),\\
+         &\quad G_j \leq 0,
+    \end{aligned}
+\end{equation}
+where $\Omega$ is the design domain, $\rho \in L^2(\Omega)$ is a function describing the material distribution,
+$f$ forms the objective function, $\theta$ is the \textit{mass fraction} (that is, the fraction of $\Omega$
+which may be occupied by material; this may be made physical by considering material cost constraints, etc.),
+and $G_j$ describes a related set of constraints. One typically uses a finite element method to assess the design
+and a gradient-based optimization method to discover a solution $\rho$.
+
+\tableofcontents
+
+\section{Classical Methods and Linear Elasticity}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Heat Compliance}
+
+We would like to solve
+
+
+
+
+
+\printbibliography
+
+\appendix
+\section{Code Listings}
+\include{Appendices/Listings.tex}
+
+
+\end{document}
