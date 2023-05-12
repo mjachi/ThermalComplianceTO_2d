@@ -1,3 +1,3 @@
-# APMA2560 Final Project
+# Topology Optimization
 
-Topology Optimization
+MFEM topology optimization code for thermal compliance.
