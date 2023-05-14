@@ -93,6 +93,36 @@ Mesh UnitSquare_Geo_2Sinks(int ref_levels) {
 }
 
 /**
+ * @brief Creates a mesh on a unit square with the middle third cut out.
+ *      
+ * @param ref_levels Number of refinement levels
+ */
+Mesh LShape_Homogeneous(int ref_levels) {
+
+  Mesh mesh("../data/LShaped1.mesh", 1, 1);
+  // Refine mesh
+
+  int i;
+  for (i = 0; i < ref_levels; i++) {
+    mesh.UniformRefinement();
+  }
+
+  return mesh;
+}
+
+Mesh LShape_Inhomo(int ref_levels) {
+  Mesh mesh("../data/LShape2.mesh", 1, 1);
+
+  int i;
+  for (i = 0; i < ref_levels; i++) {
+    mesh.UniformRefinement();
+  }
+
+  return mesh;
+}
+
+
+/**
  * @brief Nonlinear projection of ψ onto the subspace
  *        ∫_Ω sigmoid(ψ) dx = θ vol(Ω) as follows.
  *
@@ -191,8 +221,9 @@ int main(int argc, char *argv[]) {
   }
   args.PrintOptions(mfem::out);
 
-  auto mesh = UnitSquare_Geo(ref_levels);
+  //auto mesh = UnitSquare_Geo(ref_levels);
   //auto mesh = UnitSquare_Geo_2Sinks(ref_levels);
+  auto mesh = LShape_Homogeneous(ref_levels);
   int dim = mesh.Dimension();
 
   // 4. Define the necessary finite element spaces on the mesh.
