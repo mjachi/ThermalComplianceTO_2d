@@ -111,7 +111,18 @@ Mesh LShape_Homogeneous(int ref_levels) {
 }
 
 Mesh LShape_Inhomo(int ref_levels) {
-  Mesh mesh("../data/LShape2.mesh", 1, 1);
+  Mesh mesh("../data/LShaped2.mesh", 1, 1);
+
+  int i;
+  for (i = 0; i < ref_levels; i++) {
+    mesh.UniformRefinement();
+  }
+
+  return mesh;
+}
+
+Mesh LShape_Inhomo(int ref_levels) {
+  Mesh mesh("../data/HeatSink.mesh", 1, 1);
 
   int i;
   for (i = 0; i < ref_levels; i++) {
@@ -223,7 +234,8 @@ int main(int argc, char *argv[]) {
 
   //auto mesh = UnitSquare_Geo(ref_levels);
   //auto mesh = UnitSquare_Geo_2Sinks(ref_levels);
-  auto mesh = LShape_Homogeneous(ref_levels);
+  //auto mesh = LShape_Homogeneous(ref_levels);
+  auto mesh = LShape_Inhomo(ref_levels);
   int dim = mesh.Dimension();
 
   // 4. Define the necessary finite element spaces on the mesh.
@@ -266,16 +278,29 @@ int main(int argc, char *argv[]) {
   Array<int> ess_bdr(maxat);
   Array<int> nbc_bdr(maxat);
   ess_bdr = 0; nbc_bdr = 0;
-  ess_bdr[0] = 1; nbc_bdr[1] = 1;
+
+  // WITHOUT SOURCE
+  // ess_bdr[0] = 1; nbc_bdr[1] = 1;
+  // WITH SOURCE
+  ess_bdr[0] = 1; nbc_bdr[2] = 1;
 
   ConstantCoefficient one_cp(1.0);
+  ConstantCoefficient zero_cp(0.0);
+  ConstantCoefficient small_cp(0.125);
   ConstantCoefficient one_cp2(1.0);
 
   DiffusionSolver *DiffSolver = new DiffusionSolver();
   DiffSolver->SetMesh(&mesh);
   DiffSolver->SetOrder(state_fec.GetOrder());
-  DiffSolver->SetRHSCoefficient(&one_cp);
+  // f = 1
+  // DiffSolver->SetRHSCoefficient(&one_cp);
+  // f = 0
+  DiffSolver->SetRHSCoefficient(&zero_cp);
   DiffSolver->SetEssentialBoundary(ess_bdr);
+
+  // WITH SOURCE
+  DiffSolver->SetNeumannBoundary(nbc_bdr);
+  DiffSolver->SetNeumannData(&one_cp);
 
   DiffSolver->SetupFEM();
 
@@ -369,18 +394,15 @@ int main(int argc, char *argv[]) {
     rho_filter = *FilterSolver->GetFEMSolution();
 
     // Step 2 - State solve
-    // OLD: Solve (λ(ρ̃) ∇⋅u, ∇⋅v) + (2 μ(ρ̃) ε(u), ε(v)) = (f,v)
-    // NEW: Solve (r(ρ̃) ∇ u, ∇ v) = (f,v)
+    // Solve (r(ρ̃) ∇ u, ∇ v) = (f,v)
     SIMPInterpolationCoefficient SIMP_cf(&rho_filter, rho_min, 1.0);
-    // DiffSolver->SetDiffusionCoefficient(&one);
     DiffSolver->SetDiffusionCoefficient(&SIMP_cf);
     DiffSolver->SetupFEM();
     DiffSolver->Solve();
     u = *DiffSolver->GetFEMSolution();
 
     // Step 3 - Adjoint filter solve
-    // OLD: Solve (ϵ² ∇ w̃, ∇ v) + (w̃, v) = (-r'(ρ̃) ( λ |∇⋅u|² + 2 μ |ε(u)|²),v)
-    // NEW: Solve (ϵ² ∇ w̃, ∇ v) + (w̃, v) = (-r'(ρ̃) |∇u|²,v)
+    // Solve (ϵ² ∇ w̃, ∇ v) + (w̃, v) = (-r'(ρ̃) |∇u|²,v)
     DirichletEnergyCoefficient d_cf(&u, &rho_filter, rho_min);
     FilterSolver->SetRHSCoefficient(&d_cf);
     FilterSolver->Solve();

@@ -516,10 +516,14 @@ also constantly and uniformly heated. The problem remains otherwise the same.
     \end{tikzpicture}
 \end{figure}
 
+We again see the tree-like structure here, maximizing surface area; intuitively, that it wraps around the corner
+is an artifact of the mass constraint and that it needs to reach the south-east corner. The simulation was run
+with $\theta = 0.5$ and $\alpha = 0.001$.
+
 \subsubsection{$L$-shaped Domain with a Sink and a Source}
 
 We will again allow for heat to escape part of the top edge, but instead of constant heating throughout, we will
-consider only a source (marked in red; corresponding to given non-homogeneous boundary conditions) making up the right edge.
+consider only a source (marked in red; corresponding to given non-homogeneous Neumann boundary conditions) on the right edge.
 
 \begin{figure}[H]
     \centering
@@ -538,11 +542,15 @@ consider only a source (marked in red; corresponding to given non-homogeneous bo
         
 
         \node at (1, 4) [anchor = south] {$u = 0$};
-        % \node at (1, 1) {$f = 1$};
+        \node at (1, 1) {$f = 0$};
         \node at (4, 1) [anchor = west] {$\nabla u \cdot \mathbf{n} = 1$};
         \node at (2, 0) [anchor = north] {$\nabla u \cdot \mathbf{n} = 0$};
     \end{tikzpicture}
 \end{figure}
+
+On the physicality of this solution, we can interpret this as simply taking the shortest path to distribute
+the heat to the sink. This simulation was also run with $\theta = 0.5$ and $\alpha = 0.001$.
+
 \vfill\pagebreak
 
 \begin{figure}[H]
@@ -619,5 +627,125 @@ consider only a source (marked in red; corresponding to given non-homogeneous bo
         \includegraphics[width=\textwidth]{imgs/LShape_Solution/eighth.png}
         \caption{$t = 225$}
     \end{subfigure}
+\end{figure}
+
+
+\vfill\pagebreak
+
+\begin{figure}[H]
+    \centering
+    \caption{$L$-shape with a Sink and Source: Filtered Distribution}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource/first.png}
+        \caption{$t = 3$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource/second.png}
+        \caption{$t = 8$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource/third.png}
+        \caption{$t = 12$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource/fourth.png}
+        \caption{$t = 18$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource/fifth.png}
+        \caption{$t = 26$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource/sixth.png}
+        \caption{$t = 34$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource/seventh.png}
+        \caption{$t = 45$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource/eighth.png}
+        \caption{$t = 80$}
+    \end{subfigure}
+\end{figure}
+
+\vfill\pagebreak
+
+\begin{figure}[H]
+    \centering
+    \caption{$L$-shape with a Sink and Source: State Solution}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource_Solution/first.png}
+        \caption{$t = 3$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource_Solution/second.png}
+        \caption{$t = 8$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource_Solution/third.png}
+        \caption{$t = 12$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource_Solution/fourth.png}
+        \caption{$t = 18$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource_Solution/fifth.png}
+        \caption{$t = 26$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource_Solution/sixth.png}
+        \caption{$t = 34$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource_Solution/seventh.png}
+        \caption{$t = 45$}
+    \end{subfigure}
+    \begin{subfigure}{.4\textwidth}
+        \includegraphics[width=\textwidth]{imgs/LShapeSource_Solution/eighth.png}
+        \caption{$t = 80$}
+    \end{subfigure}
+\end{figure}
+
+\vfill\pagebreak
+
+\subsubsection{CPU Heat Sink Problem}
+
+Finally, we will consider a heat sink design problem, where the heat source is embedded within our design space $\Omega$;
+on the ``internal boundary'' formed by the presence of this source, eg, a computer processor, we will impose nonhomogeneous Neumann BCs.
+Heat is allowed to escape on the left and right edges, where we might imagine there is a connection to a larger
+heatsink.
+
+\begin{figure}[H]
+    \centering
+    \caption[b]{$L$-shaped $\Omega$ with a sink.}
+    \begin{tikzpicture}
+        \draw [red] (0,0) -- (1.5,0);
+        \draw [red] (0,0) -- (0,1.5);
+        \draw [red] (1.5,0) -- (1.5,1.5);
+        \draw [red] (0,1.5) -- (1.5,1.5);
+
+        \draw [ultra thick] (-1,-1) -- (2.5,-1);
+        \draw [ultra thick] (-1,2.5) -- (2.5,2.5);
+        \draw [ultra thick] (-1,-1) -- (-1,0);
+        \draw [ultra thick] (2.5,-1) -- (2.5,0);
+        \draw [ultra thick] (-1,2.5) -- (-1,1.5);
+        \draw [ultra thick] (2.5,2.5) -- (2.5,1.5);
+
+        \draw [ultra thick] (2.5,1.5) -- (3.5,1.5);
+        \draw [blue] (3.5,1.5) -- (3.5,0);
+        \draw [ultra thick] (3.5,0) -- (2.5,0);
+
+        \draw [ultra thick] (-1,1.5) -- (-2,1.5);
+        \draw [blue] (-2,1.5) -- (-2,0);
+        \draw [ultra thick] (-1,0) -- (-2,0);
+
+        \node at (3.5, 0.75) [anchor = west] {$u = 0$};
+        \node at (0.75, -0.5) {$f = 0$};
+        \node at (0.75, 1.5) [anchor = south] {$\nabla u \cdot \mathbf{n} = 1$};
+        \node at (0.75,2.5) [anchor = south] {$\nabla u \cdot \mathbf{n} = 0$};
+
+    \end{tikzpicture}
 \end{figure}
 
