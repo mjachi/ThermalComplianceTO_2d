@@ -121,7 +121,7 @@ Mesh LShape_Inhomo(int ref_levels) {
   return mesh;
 }
 
-Mesh LShape_Inhomo(int ref_levels) {
+Mesh HeatSink(int ref_levels) {
   Mesh mesh("../data/HeatSink.mesh", 1, 1);
 
   int i;
@@ -235,7 +235,8 @@ int main(int argc, char *argv[]) {
   //auto mesh = UnitSquare_Geo(ref_levels);
   //auto mesh = UnitSquare_Geo_2Sinks(ref_levels);
   //auto mesh = LShape_Homogeneous(ref_levels);
-  auto mesh = LShape_Inhomo(ref_levels);
+  //auto mesh = LShape_Inhomo(ref_levels);
+  auto mesh = HeatSink(ref_levels);
   int dim = mesh.Dimension();
 
   // 4. Define the necessary finite element spaces on the mesh.
