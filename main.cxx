@@ -49,6 +49,49 @@ Mesh UnitSquare_Geo(int ref_levels) {
   return mesh;
 }
 
+
+/**
+ * @brief Creates a mesh on a unit square with the middle third cut out.
+ *      
+ * @param ref_levels Number of refinement levels
+ */
+Mesh UnitSquare_Geo_2Sinks(int ref_levels) {
+
+  // Create 1x1 square of 9 quadrilaterals
+  // auto mesh = Mesh::MakeCartesian2D(3, 3, mfem::Element::Type::QUADRILATERAL, true, 1.0, 1.0);
+  auto mesh = Mesh::MakeCartesian2D(3, 3, mfem::Element::Type::QUADRILATERAL);
+
+  // Set boundary conditions
+  int i;
+  for (i = 0; i < mesh.GetNBE(); i++) {
+    Element *be = mesh.GetBdrElement(i);
+    Array<int> vertices;
+    be->GetVertices(vertices);
+
+    double *coords1 = mesh.GetVertex(vertices[0]);
+    double *coords2 = mesh.GetVertex(vertices[1]);
+
+    Vector center(2);
+    center(0) = 0.5 * (coords1[0] + coords2[0]);
+    center(1) = 0.5 * (coords1[1] + coords2[1]);
+
+    if (((center(0) == 0.5) && (center(1) == 1)) || (center(0) == 0.5 && center(1) == 0)) {
+      be->SetAttribute(1);
+    } else {
+      be->SetAttribute(2);
+    }
+  }
+  mesh.SetAttributes();
+
+  // Refine mesh
+
+  for (i = 0; i < ref_levels; i++) {
+    mesh.UniformRefinement();
+  }
+
+  return mesh;
+}
+
 /**
  * @brief Nonlinear projection of ψ onto the subspace
  *        ∫_Ω sigmoid(ψ) dx = θ vol(Ω) as follows.
@@ -149,6 +192,7 @@ int main(int argc, char *argv[]) {
   args.PrintOptions(mfem::out);
 
   auto mesh = UnitSquare_Geo(ref_levels);
+  //auto mesh = UnitSquare_Geo_2Sinks(ref_levels);
   int dim = mesh.Dimension();
 
   // 4. Define the necessary finite element spaces on the mesh.

@@ -8,14 +8,17 @@
 \usepackage{enumerate}
 \usepackage{lipsum}
 \usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\usepackage{caption}
+\usepackage{subcaption}
 
 % hyperref
 \usepackage{hyperref}
 \usepackage{cleveref}
 \newcommand\myshade{90}
-\colorlet{mylinkcolor}{NavyBlue}
-\colorlet{mycitecolor}{Aquamarine}
-\colorlet{myurlcolor}{Aquamarine}
+\colorlet{mylinkcolor}{MidnightBlue}
+\colorlet{mycitecolor}{Cerulean}
+\colorlet{myurlcolor}{Cerulean}
 
 \hypersetup{
   linkcolor  = mylinkcolor!\myshade!black,
@@ -124,6 +127,9 @@ sorting=ynt
     tabsize           = 2,
 }
 
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
 % Disable paragraph indentation, and increase gap
 \usepackage{parskip}
 
@@ -137,38 +143,45 @@ sorting=ynt
 Briefly, topology optimization offers a class of techniques and algorithms for discovering the optimal distribution of
 material within a given domain, subject to some set of physics and other constraints, which tend to form
 PDE-constrained optimization problems. In general, these problems take the form
-\begin{equation}
+\begin{equation}\label{eq:general_problem}
     \begin{aligned}
-        \min_{\rho} &\quad F:=\int_\Omega f(u(\rho), \rho)\mathrm{d}V\\
-        \text{s.t.} &\quad \int_\Omega \rho \mathrm{d}V \leq \theta V(\Omega),\\
-         &\quad G_j \leq 0,
+        \min_{\rho} &\quad F = F(u(\rho), \rho)=\int_\Omega f(u(\rho), \rho)\mathrm{d}V\\
+        \text{s.t.} &\quad \int_\Omega \rho \mathrm{d}V - V_0 \leq 0,\\
+         &\quad G_i(u(\rho), \rho) \leq 0,
     \end{aligned}
 \end{equation}
 where $\Omega$ is the design domain, $\rho \in L^2(\Omega)$ is a function describing the material distribution,
 $f$ forms the objective function, $\theta$ is the \textit{mass fraction} (that is, the fraction of $\Omega$
 which may be occupied by material; this may be made physical by considering material cost constraints, etc.),
 and $G_j$ describes a related set of constraints. One typically uses a finite element method to assess the design
-and a gradient-based optimization method to discover a solution $\rho$.
+and a gradient-based optimization method (e.g. the optimality criteria algorithm or a descent algorithm) to
+discover a solution $\rho$, though gradient-free methods (e.g.  using genetic algorithms) have been studied.
+
+We will first focus on linear elasticity, for historical reasons, and the heuristic development of the foremost
+methodologies, turning then to a brief exposition of modern methods and implementations of a few heat conduction 
+problems.
+
 
 \tableofcontents
 
 \section{Classical Methods and Linear Elasticity}
-
+\input{Sections/ClassicalMethods.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Heat Compliance}
-
-We would like to solve
-
-
+\section{Thermal Compliance with the Entropic Finite Element Method (EFEM)}
+\input{Sections/EFEMThermal.tex}
 
 
 
 \printbibliography
 
 \appendix
-\section{Code Listings}
-\include{Appendices/Listings.tex}
+\section{\texttt{toph.jl} Derivation and Details}
+\input{Appendices/TopH}
+
+\section{Julia Code Listings}\label{sec:Julia_Listings}
+\input{Appendices/Listings.tex}
+
 
 
 \end{document}
