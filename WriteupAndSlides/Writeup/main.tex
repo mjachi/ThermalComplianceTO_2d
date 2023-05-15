@@ -153,19 +153,16 @@ PDE-constrained optimization problems. In general, these problems take the form
 where $\Omega$ is the design domain, $\rho \in L^2(\Omega)$ is a function describing the material distribution,
 $f$ forms the objective function, $\theta$ is the \textit{mass fraction} (that is, the fraction of $\Omega$
 which may be occupied by material; this may be made physical by considering material cost constraints, etc.),
-and $G_j$ describes a related set of constraints. One typically uses a finite element method to assess the design
-and a gradient-based optimization method (e.g. the optimality criteria algorithm or a descent algorithm) to
-discover a solution $\rho$, though gradient-free methods (e.g.  using genetic algorithms) have been studied.
-
-We will first focus on linear elasticity, for historical reasons, and the heuristic development of the foremost
-methodologies, turning then to a brief exposition of modern methods and implementations of a few heat conduction 
-problems.
-
+and $G_j$ describes a related set of constraints.
 
 \tableofcontents
 
-\section{Classical Methods and Linear Elasticity}
+\section{Classical Methods}
 \input{Sections/ClassicalMethods.tex}
+\section{Structural Compliance with \texttt{top88}}
+\input{Sections/top88.tex}
+\section{Thermal Compliance with \texttt{toph}}
+\input{Sections/toph.tex}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Thermal Compliance with the Entropic Finite Element Method (EFEM)}
@@ -176,7 +173,7 @@ problems.
 \printbibliography
 
 \appendix
-\section{\texttt{toph.jl} Derivation and Details}
+\section{\texttt{toph.jl} Derivation and Details}\label{sec:toph_appendix}
 \input{Appendices/TopH}
 
 \section{Julia Code Listings}\label{sec:Julia_Listings}

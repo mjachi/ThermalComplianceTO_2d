@@ -1,6 +1,134 @@
-Like the finite element method itself, Topology Optimization found its first motivations in mechanical engineering;
-for this reason, the classic problem is to construct a stiff structure in the design domain that minimizes the
-\textit{compliance} (or, strain energy) under the given boundary conditions.
+To this end, \autoref{eq:general_problem} is not quite complete: we will require also
+that $\rho$ take on binary values $0$ or $1$ within $\Omega$, with the natural interpretation being that
+this indicates whether or not that point should be empty or solid material. Typically, one will
+use a finite element method to assess the state and develop some notion of a gradient to inform the design steps.
 
-In the ideal, we would be able to 
+However, we run immediately into a few issues:
+\begin{enumerate}
+    \item \textit{Existence/ Uniqueness}: In general, topology optimization problems may not have solutions, much less unique solutions.
+    \item \textit{Mesh dependence}: Often, introducing more ``holes'' to the design will decrease the objective.
+        If the discretized $\Omega$ has a very large number of elements, we make way for the introduction of more and more
+        holes, meaning that an extremely fine mesh could yield a substantially different solution than that
+        which might be reached on a coarser mesh.
+    \item \textit{Discrete $\rho$}: Such a discrete optimization problem is extremely hard to solve and would be certainly
+        very costly for any reasonably fine mesh. Algorithms depending on continuity are, in general, better 
+        understood, computationally efficient, etc, so we can instead require $0 \leq \rho \leq 1$ throughout
+        the domain.
+    \item \textit{Gray areas with continuous $\rho$}: Using continuous $\rho$ makes for a tractable problem,
+        however it is itself not without loss.
+        
+        In particular, we lose the clear physical interpretation
+        allowing for any value between $0$ and $1$ at each location. Moreover, we need to penalize
+        cases where $\rho$ takes on values at least not very close to $0$ or $1$, otherwise we may have
+        significant portions of ``gray area,'' which are un-physical and uninterpretable.
+\end{enumerate}
+
+This full topology optimization problem with continuous design variables can be written
+\begin{equation}\label{eq:general_continuous}
+    \begin{aligned}
+        \min_{\rho} &\quad F = F(u(\rho), \rho)=\int_\Omega f(u(\rho), \rho)\mathrm{d}V\\
+        \text{s.t.} &\quad \int_\Omega \rho \mathrm{d}V - V_0 \leq 0,\\
+            &\quad G_i(u(\rho), \rho) \leq 0,\\
+            &\quad 0 \leq \rho \leq 1.
+    \end{aligned}
+\end{equation}
+Several approaches for continuous problems exist; the largest of these are the density, topological
+derivative, and level set approaches. The density approach will be adopted to run several simulations herein,
+so we will be most interested in this. Unless stated otherwise, we are interested only in the continuous problems here.
+
+\subsection{Density Approach}
+
+By and large the most prevalent method is the density approach. Here, one chooses a way to introduce a notion
+of material property that, given the presence or absence of material at that location, will impact the
+physics introduced; the geometry of the structure is then built by describing where the material should be placed.
+The objective in \autoref{eq:general_continuous} can often be written as some
+$r(\rho) \cdot f_0(u)$, where $r(\rho)$ is the choice density interpolation function and $f_0$ is
+a function of the field for solid material.\cite{bendsoe_sigmund_topopt}
+
+Turning to addressing gray areas, we can explicitly penalize it (incentivize $0-1$ solutions) with an additional term
+\begin{equation}\label{eq:explicit_penal}
+    \alpha \int_\Omega \rho(1 - \rho).
+\end{equation}
+
+While initially taken to be artificial and later given physical meaning,\cite{sigmund_maute_2013} the Simplified Isotropic
+Material with Penalization (SIMP) approach is the foremost density approach for single-variable material problems\footnote{
+    as opposed to having several materials.
+}
+and is the particular methodology adopted for the later simulations; it serves as an implicit penalization against
+the explicit penalization strategy above.
+
+The idea in general is to provide a continuous interpolation between solid and void while penalizing the intermediate
+density values (thereby addressing the issue raised in item (3) above) with the power-law, ie,
+\begin{equation*}
+    E(\rho_i) = \rho_i^p \cdot E_0,
+\end{equation*}
+where $\rho_i$ denotes the value at a location $i$, $p$ is a chosen exponent (usually chosen $p=3$), and $E_0$
+is the Young's modulus for solid material. For $p=1$, it is worth noting that there is a unique solution for
+the compliance objective due to the problem's convexity; for $p>1$, we will begin to favor $0-1$ solutions.
+
+To address issue (2) from above, restriction methods have been introduced and provide a way to ensure mesh-independency
+and well-posedness. Heuristically, we should never allow for the ``infinitesimal holes'' to be a part of the solution;
+in the discretization, this is akin to allowing structural features of the solution to be captured with maybe a single
+low-order element. It is with this that we can recover our expectations of mesh convergence and better serve physical
+intution.
+
+\subsubsection{Sensitivity Filtering/ One-field SIMP}
+
+The first method is the sensitivity filter, which allows the introduction of a notion of length-scale. Specifically,
+the filter modifies element sensitivty values as weighted averages within a (mesh-independent) radius $r_{\text{min}}$. Because
+of this, there will consistently be a ``gray edge'' separating areas of solid material and of void, though this
+remains much more physically intuitive than without.
+
+Other one-field SIMP methods come in the form of explicit constraints/ penalties on the gradient of $\rho$ or its perimeter,
+which can be expressed in $q$-norms $||\cdot||_q$ integrated over the domain $\Omega$. It's easy to see a natural extension
+of the explicit penalization \autoref{eq:explicit_penal} of the form
+\begin{equation}
+    \alpha \int_\Omega \overline{\rho} (1- \overline{\rho}),
+\end{equation}
+where $\overline{\rho}$ is some localized density average over an $r_\text{min}$. However, it is difficult to select
+parameter values a priori.
+
+\subsubsection{Density Filtering/ Two-Field SIMP}
+
+The main alternative to sensitivity filtration is density filtration, where we work with e.g. again density averages
+$\overline{\rho}$ over a length parameter $r$ which can be related to $r_\text{min}$ from above. This can be written
+as a Helmholtz type diffusion
+\begin{equation}
+    -r^2 \Delta \overline{\rho} + \overline{\rho} = \rho,
+\end{equation}
+though again we will have the issue of grey transition areas. The term `two-field' comes from this filter working with both
+the design variable field $\rho$ and the physical density field $\overline{\rho}$. If well penalized, the solution
+will end up being very nearly discrete.
+
+\subsection{Other Major Algorithms}
+
+While not a primary focus, it is worth briefly describing the topological derivative and level set approaches.
+
+The method of topological derivatives in topology and shape optimization's central idea is to assess the influence of
+introducing infinitesimal holes at points in the domain $\Omega$ and use that to inform the design update steps.
+However, the mathematics required to derive this method is rather complicated; more importantly, the holes introduced
+in a finite element discretization will always be of finite volume, rather than the infinitesimal holes given
+on paper. The rammifications thereof are not well understood.
+
+The level set approach's central idea is to construct the geometry via the definition of a solid-void interface,
+rather than explicitly indicating where the material should be placed as is done with the density approach.
+Specifically, the design boundary will be specified by the zero level counter of the level set function 
+$\phi(x)$ with the structure itself defined by the domain where the level set function is positive.
+\begin{equation}
+    \rho = \begin{cases}
+        0 : \forall x \in \Omega : \phi < 0\\
+        1 : \forall x \in \Omega : \phi \geq 0.
+    \end{cases}
+\end{equation}
+
+\subsection{Discrete Approaches: ESO}
+
+Since \autoref{eq:general_problem} was posed for discrete $\rho$, it is also worth mentioning the evolutionary
+methods that have seen success on smaller problems, though these are also not a primary focus.
+
+The most notable family is the evolutionary approach, which is based off a simple hard-kill strategy
+where one removes the lowest energy element from the structure (ESO). This can be extended to a bidirectional
+strategy when elements are added only if they are considered rewarding in the analogous way (BESO).
+More recently came the genetic evolutionary structural optimization strategy (GESO), which combined the
+genetic algorithm with ESO.
 

@@ -184,7 +184,8 @@ following formulas will be useful. The first is rather intuitive.
 
 \subsubsection{Filter Equation}
 
-Taking the derivative $\partial_{\tilde{w}} \mathcal{L}$, we will obtain the filter equation. Skipping the
+Taking the derivative $\partial_{\tilde{w}} \mathcal{L}$, we will obtain the filter equation from the 
+two-field SIMP approach. Skipping the
 application of \autoref{lem:zero_gateaux}, we have
 \begin{align*}
     \partial_{\tilde{w}} \mathcal{L} &= \partial_{\tilde{w}} \left[ -(\epsilon^2 \nabla \tilde{\rho}, \nabla \tilde{w}) - (\tilde{\rho}, \tilde{w}) + (\rho, \tilde{w})\right] \\
@@ -264,7 +265,7 @@ the derivative equal to zero, we would like to find $\tilde{\rho}$ satisfying
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Examples}
+\subsection{Results}
 
 We will now simulate a few problems over varying domains subject to varying boundary conditions. What remains is to describe the design domains $\Omega$ and
 apply boundary conditions as appropriate.
@@ -829,4 +830,15 @@ heatsink.
 \end{figure}
 
 \vfill\pagebreak
+
+\subsection{Parallelization}
+
+The parallelized code is available in \texttt{mainp.cxx} and also depends on \texttt{main.hxx};
+the CMake currently does not build this code, but it can be copied into the MFEM examples directory,
+added to the Makefile,\footnote{Importantly, the file extension must be changed to \texttt{.cpp} instead.}
+and built there instead.
+Little of the topology algorithm is embarassingly parallel (in particular, since we are following an iterative optimization
+which is dependent on the previous step), so the parallelization is primarily handled behind the scenes by MFEM.
+The original unit square problem is hard-coded currently.
+
 

@@ -5,3 +5,46 @@ design and syntax, the codes end up being quite similar, though the Julia versio
 familiar to a generally experienced programmer.
 
 The problem is to minimize the thermal compliance in the unit square as was done in \autoref{sec:thermal_compliance_classic_unit_square}.
+%\begin{equation}\label{eq:toph_problem}
+    %\begin{aligned}
+        %\min_{\mathbf{x}} &\quad c(\mathbf{x}) := U^T K U = \sum E_e(x_e) u_e^T k_0 u_e\\
+        %\text{s.t.} &\quad V(x)/ V_0 = \theta,\\
+            %&\quad KU = F,\\
+            %&\quad 0 \leq \rho \leq 1.
+    %\end{aligned}
+%\end{equation}
+
+
+
+
+\subsection{Primary Loop}
+The main optimization loop is as follows:
+\begin{algorithm}
+    \caption{\texttt{toph}: Main loop.}\label{alg:toph_main}
+    \begin{algorithmic}
+    \Require \texttt{nelx} (number of $x$ elements), \texttt{nely}, $\theta$ (volume fraction), $p$ (penalization factor), $r_{\text{min}}$ (filter radius)
+    \Ensure $x$ satisfies the optimization problem.
+
+    \State $x \gets \theta \cdot \mathbf{1}$ \Comment{Initial guess is a matrix of $\theta$'s}
+
+    \While{not converged}
+
+        $x_\text{old} \gets x$
+
+        $U \gets$ \texttt{FE}; Displacement vector. \Comment{State solution.}
+
+        $KE \gets$ Element Stiffness Matrix
+
+        $c \gets$ objective function calculation
+
+        $dc \gets$ \texttt{check} \Comment{Sensitivity filter.}
+
+        $x \gets$ \texttt{OC} \Comment{Design update step (by the optimality criteria method).}
+
+    \EndWhile
+    \end{algorithmic}
+\end{algorithm}
+
+The convergence condition depends on the largest value in the difference $x - x_\text{old}$.
+
+
