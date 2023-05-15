@@ -35,5 +35,5 @@ enable_language(CXX)
 
 include_directories(${MFEM_INCLUDE_DIRS})
 add_executable(main main.cxx)
-add_executable(mainp mainp.cxx)
+# add_executable(mainp mainp.cxx)
 target_link_libraries(main PRIVATE ${MFEM_LIBRARIES})
