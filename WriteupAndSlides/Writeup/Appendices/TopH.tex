@@ -5,6 +5,7 @@ design and syntax, the codes end up being quite similar, though the Julia versio
 familiar to a generally experienced programmer.
 
 The problem is to minimize the thermal compliance in the unit square as was done in \autoref{sec:thermal_compliance_classic_unit_square}.
+We are interested in the distribution of two material phases with isotropic conductivities of $1$ and $0.001$ for material and void, respectively.
 %\begin{equation}\label{eq:toph_problem}
     %\begin{aligned}
         %\min_{\mathbf{x}} &\quad c(\mathbf{x}) := U^T K U = \sum E_e(x_e) u_e^T k_0 u_e\\
@@ -45,6 +46,57 @@ The main optimization loop is as follows:
     \end{algorithmic}
 \end{algorithm}
 
-The convergence condition depends on the largest value in the difference $x - x_\text{old}$.
+The convergence condition depends on the largest value in the difference $x - x_\text{old}$ or the maximum number of allowed iterations.
+Here, the only calculation that requires motivation is that of the objective function (the large \texttt{for} loop).
+We have seen that this is $U^T K U = \sum E_e(x_e) u_e^T k_0 u_e$. Due to the symmetry between all the square elements, for solid material,
+$k_0$ (the element stiffness matrix) is identical,\footnote{The MATLAB code keeps this as a subroutine that returns a constant value,
+but this is inefficient in general for several reasons, especially for a JIT language like Julia.} so we need only construct it once and can maintain it as e.g. a \texttt{const}.
+\begin{equation}
+    KE = \begin{pmatrix}
+        k_{11} & k_{12} & k_{13} & k_{14} \\
+        k_{21} & k_{22} & k_{23} & k_{24} \\
+        k_{31} & k_{32} & k_{33} & k_{34} \\
+        k_{41} & k_{42} & k_{43} & k_{44} \\
+    \end{pmatrix} = \begin{pmatrix}
+        2/3 & -1/6 & -1/3 & -1/6 \\
+        -1/6 & 2/3 & -1/6 & -1/6 \\
+        -1/3 & -1/6 & 2/3 & -1/6 \\
+        -1/6 & -1/3 & -1/6 & 2/3 \\
+    \end{pmatrix}.
+\end{equation}
+We calculate also the sensitivites $\frac{\partial c}{\partial x_e}$, the formula for which we have essentially seen; in particular,
+notice that the derivatives are always negative, meaning that increasing the material reduces the thermal compliance of the structure.
+\begin{equation}
+    \partial c / \partial x_e = -0.999 \cdot p \cdot x_e^{p-1} u^T k_0 u
+\end{equation}
+\texttt{Ue} denotes the element displacement; obtaining this is a matter of vertex indexation once we have the global displacement vector
+\texttt{U}. The elements are numbered column-wise from left to right. This constructed sensitivity matrix is passed into the sensitivity filter subroutine as well as the relevant parameters and current
+material distribution.
+
+\subsection{Finite Element Analysis}
+
+We form the global stiffness matrix \texttt{K} with a loop over all elements. Then, the load is set to all $0.01$, meaning that entire domain is
+uniformly heated. Finally, the matrix problem $Ku = f$ is solved and the solution $U$ is returned.
+
+\subsection{OC based optimizer}
+
+Here, we follow the algorithm outlined in the discussion of \texttt{top88}; nothing changes in this case with the physics hot-swap. The primary
+loop is the bisectioning algorithm for finding the Lagrange multiplier, and while we wait for the bisectioning algorithm, at each step, we update
+the distribution in \texttt{xnew}, which is finally returned upon convergence.
+
+\subsection{Mesh-independency filtering}
+
+This is an implementation of the sensitivity filter, which was skipped for the sake of brevity. The scheme modifies the element sensitivities
+of the compliance with\cite{bendsoe_sigmund_topopt}
+\begin{equation}
+    \hat{\frac{\partial f}{\partial \rho_k}} = \frac{1}{\rho_k \sum \hat{H}_i} \sum \hat{H}_i \rho_i \frac{f}{\rho_i},
+\end{equation}
+where the weight factor $\hat{H}_i$ is
+\begin{equation}
+    \hat{H}_i = r_\text{min} - \text{dist}(k,i), \quad \{i \in N | \text{dist}(k,i) \leq r_\text{min}\}, k = 1, \ldots, N,
+\end{equation}
+where $N$ is the number of elements in the mesh.
+
+
 
 
