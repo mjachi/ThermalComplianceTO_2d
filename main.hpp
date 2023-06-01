@@ -7,7 +7,153 @@
 #include <functional>
 #include <iostream>
 
+
+
 namespace mfem {
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// Meshing
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief Creates a mesh on a unit square with the middle third cut out.
+ *      
+ * @param ref_levels Number of refinement levels
+ */
+Mesh UnitSquare_Geo(int ref_levels) {
+
+  // Create 1x1 square of 9 quadrilaterals
+  auto mesh = Mesh::MakeCartesian2D(3, 3, mfem::Element::Type::QUADRILATERAL);
+
+  // Set boundary conditions
+  int i;
+  for (i = 0; i < mesh.GetNBE(); i++) {
+    Element *be = mesh.GetBdrElement(i);
+    Array<int> vertices;
+    be->GetVertices(vertices);
+
+    double *coords1 = mesh.GetVertex(vertices[0]);
+    double *coords2 = mesh.GetVertex(vertices[1]);
+
+    Vector center(2);
+    center(0) = 0.5 * (coords1[0] + coords2[0]);
+    center(1) = 0.5 * (coords1[1] + coords2[1]);
+
+    if ((center(0) == 0.5) && (center(1) == 1)) {
+      be->SetAttribute(1);
+    } else {
+      be->SetAttribute(2);
+    }
+  }
+  mesh.SetAttributes();
+
+  // Refine mesh
+
+  for (i = 0; i < ref_levels; i++) {
+    mesh.UniformRefinement();
+  }
+
+  return mesh;
+}
+
+/**
+ * @brief Creates a mesh on a unit square with the middle third cut out.
+ *      
+ * @param ref_levels Number of refinement levels
+ */
+Mesh UnitSquare_Geo_2Sinks(int ref_levels) {
+
+  // Create 1x1 square of 9 quadrilaterals
+  // auto mesh = Mesh::MakeCartesian2D(3, 3, mfem::Element::Type::QUADRILATERAL, true, 1.0, 1.0);
+  auto mesh = Mesh::MakeCartesian2D(3, 3, mfem::Element::Type::QUADRILATERAL);
+
+  // Set boundary conditions
+  int i;
+  for (i = 0; i < mesh.GetNBE(); i++) {
+    Element *be = mesh.GetBdrElement(i);
+    Array<int> vertices;
+    be->GetVertices(vertices);
+
+    double *coords1 = mesh.GetVertex(vertices[0]);
+    double *coords2 = mesh.GetVertex(vertices[1]);
+
+    Vector center(2);
+    center(0) = 0.5 * (coords1[0] + coords2[0]);
+    center(1) = 0.5 * (coords1[1] + coords2[1]);
+
+    if (((center(0) == 0.5) && (center(1) == 1)) || (center(0) == 0.5 && center(1) == 0)) {
+      be->SetAttribute(1);
+    } else {
+      be->SetAttribute(2);
+    }
+  }
+  mesh.SetAttributes();
+
+  // Refine mesh
+
+  for (i = 0; i < ref_levels; i++) {
+    mesh.UniformRefinement();
+  }
+
+  return mesh;
+}
+
+/**
+ * @brief Creates a mesh on an L-shaped domain with even heating.
+ *      
+ * @param ref_levels Number of refinement levels
+ */
+Mesh LShape_Homogeneous(int ref_levels) {
+
+  mfem::Mesh mesh("../data/LShaped1.mesh", 1, 1);
+  // Refine mesh
+
+  int i;
+  for (i = 0; i < ref_levels; i++) {
+    mesh.UniformRefinement();
+  }
+
+  return mesh;
+}
+
+/**
+ * @brief Creates a mesh on an L-shaped domain, which is functionally
+ *  a unit square with the top quarter removed. Along the top-most
+ *  edge, heat is allowed to escape; along the right-most edge
+ *  inhomogeneous Neumann BCs are set to act as a source. There
+ *  is no internal heating.
+ *      
+ * @param ref_levels Number of refinement levels
+ */
+Mesh LShape_Inhomo(int ref_levels) {
+  Mesh mesh("../data/LShaped2.mesh", 1, 1);
+
+  int i;
+  for (i = 0; i < ref_levels; i++) {
+    mesh.UniformRefinement();
+  }
+
+  return mesh;
+}
+
+/**
+ * @brief Creates a mesh on a ring-like domain with a square
+ *  cutout in the middle. Along this cutout, inhomogeneous
+ *  Neumann BCs are set to act as a source. At the edge of the two
+ *  "arms", heat is allowed to escape. There is no internal heating.
+ *      
+ * @param ref_levels Number of refinement levels
+ */
+Mesh HeatSink(int ref_levels) {
+  Mesh mesh("../data/HeatSink.mesh", 1, 1);
+
+  int i;
+  for (i = 0; i < ref_levels; i++) {
+    mesh.UniformRefinement();
+  }
+
+  return mesh;
+}
+
 // Inverse sigmoid function
 double inv_sigmoid(double x) {
   double tol = 1e-12;

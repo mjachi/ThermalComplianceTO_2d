@@ -1,138 +1,11 @@
-#include "main.hxx"
+#include "main.hpp"
 #include "mfem.hpp"
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 using namespace std;
 using namespace mfem;
-
-
-/**
- * @brief Creates a mesh on a unit square with the middle third cut out.
- *      
- * @param ref_levels Number of refinement levels
- */
-Mesh UnitSquare_Geo(int ref_levels) {
-
-  // Create 1x1 square of 9 quadrilaterals
-  // auto mesh = Mesh::MakeCartesian2D(3, 3, mfem::Element::Type::QUADRILATERAL, true, 1.0, 1.0);
-  auto mesh = Mesh::MakeCartesian2D(3, 3, mfem::Element::Type::QUADRILATERAL);
-
-  // Set boundary conditions
-  int i;
-  for (i = 0; i < mesh.GetNBE(); i++) {
-    Element *be = mesh.GetBdrElement(i);
-    Array<int> vertices;
-    be->GetVertices(vertices);
-
-    double *coords1 = mesh.GetVertex(vertices[0]);
-    double *coords2 = mesh.GetVertex(vertices[1]);
-
-    Vector center(2);
-    center(0) = 0.5 * (coords1[0] + coords2[0]);
-    center(1) = 0.5 * (coords1[1] + coords2[1]);
-
-    if ((center(0) == 0.5) && (center(1) == 1)) {
-      be->SetAttribute(1);
-    } else {
-      be->SetAttribute(2);
-    }
-  }
-  mesh.SetAttributes();
-
-  // Refine mesh
-
-  for (i = 0; i < ref_levels; i++) {
-    mesh.UniformRefinement();
-  }
-
-  return mesh;
-}
-
-
-/**
- * @brief Creates a mesh on a unit square with the middle third cut out.
- *      
- * @param ref_levels Number of refinement levels
- */
-Mesh UnitSquare_Geo_2Sinks(int ref_levels) {
-
-  // Create 1x1 square of 9 quadrilaterals
-  // auto mesh = Mesh::MakeCartesian2D(3, 3, mfem::Element::Type::QUADRILATERAL, true, 1.0, 1.0);
-  auto mesh = Mesh::MakeCartesian2D(3, 3, mfem::Element::Type::QUADRILATERAL);
-
-  // Set boundary conditions
-  int i;
-  for (i = 0; i < mesh.GetNBE(); i++) {
-    Element *be = mesh.GetBdrElement(i);
-    Array<int> vertices;
-    be->GetVertices(vertices);
-
-    double *coords1 = mesh.GetVertex(vertices[0]);
-    double *coords2 = mesh.GetVertex(vertices[1]);
-
-    Vector center(2);
-    center(0) = 0.5 * (coords1[0] + coords2[0]);
-    center(1) = 0.5 * (coords1[1] + coords2[1]);
-
-    if (((center(0) == 0.5) && (center(1) == 1)) || (center(0) == 0.5 && center(1) == 0)) {
-      be->SetAttribute(1);
-    } else {
-      be->SetAttribute(2);
-    }
-  }
-  mesh.SetAttributes();
-
-  // Refine mesh
-
-  for (i = 0; i < ref_levels; i++) {
-    mesh.UniformRefinement();
-  }
-
-  return mesh;
-}
-
-/**
- * @brief Creates a mesh on a unit square with the middle third cut out.
- *      
- * @param ref_levels Number of refinement levels
- */
-Mesh LShape_Homogeneous(int ref_levels) {
-
-  Mesh mesh("../data/LShaped1.mesh", 1, 1);
-  // Refine mesh
-
-  int i;
-  for (i = 0; i < ref_levels; i++) {
-    mesh.UniformRefinement();
-  }
-
-  return mesh;
-}
-
-Mesh LShape_Inhomo(int ref_levels) {
-  Mesh mesh("../data/LShaped2.mesh", 1, 1);
-
-  int i;
-  for (i = 0; i < ref_levels; i++) {
-    mesh.UniformRefinement();
-  }
-
-  return mesh;
-}
-
-Mesh HeatSink(int ref_levels) {
-  Mesh mesh("../data/HeatSink.mesh", 1, 1);
-
-  int i;
-  for (i = 0; i < ref_levels; i++) {
-    mesh.UniformRefinement();
-  }
-
-  return mesh;
-}
-
-
 /**
  * @brief Nonlinear projection of ψ onto the subspace
  *        ∫_Ω sigmoid(ψ) dx = θ vol(Ω) as follows.
@@ -196,16 +69,28 @@ inline void clip(GridFunction &psi, const double max_val) {
 int main(int argc, char *argv[]) {
 
   // 1. Parse command-line options.
-  int ref_levels = 4;
-  int order = 2;
-  bool visualization = true;
-  double alpha = 0.1;
-  double epsilon = 0.01;
-  double mass_fraction = 0.5;
-  int max_it = 1e3;
-  double tol = 1e-4;
-  double rho_min = 1e-3;
+  
+  // PARAMETERS
+  int ref_levels = 4;          // # of mesh refinement levels
+  int order = 2;               // Order of FE
+  double alpha = 0.1;          // Step size
+  double epsilon = 0.01;       // Density filter radius
+  double mass_fraction = 0.5;  // Mass fraction in Omega
+  int max_it = 1e3;            // Maximum number of iterations for Newton solver in projection
+  double tol = 1e-4;           // Convergence tolerance for change in density field
+  double rho_min = 1e-3;       // Minimum of density coefficient (for modified SIMP law)
 
+  // OPTIONS
+  bool visualization = true;   // Outputs to GLVis and
+  int problem_type = 1;        // Integer for problem type (affects domain and BCs)
+                               //  1 - Classical unit square problem (one sink, even heating)
+                               //  2 - Unit square with two sinks and even heating
+                               //  3 - L-shape with even heating
+                               //  4 - L-shape with inhomogeneous Neumann BCs on right-most edge
+                               //  5 - "Chainlink" heat-sink problem
+
+
+  // Command-line options
   OptionsParser args(argc, argv);
   args.AddOption(&ref_levels, "-r", "--refine",
                  "Number of times to refine the mesh uniformly.");
@@ -225,18 +110,38 @@ int main(int argc, char *argv[]) {
   args.AddOption(&visualization, "-vis", "--visualization", "-no-vis",
                  "--no-visualization",
                  "Enable or disable GLVis visualization.");
+  args.AddOption(&problem_type, "-t", "--type", "Name problem type");
   args.Parse();
   if (!args.Good()) {
     args.PrintUsage(mfem::out);
     return 1;
   }
+  if (problem_type > 5 || problem_type < 1) {
+    mfem::out << "Problem type integer (\"-t\" or \"--type\" argument) must be 1-5" << std::endl;
+    return 1;
+  }
+
+
   args.PrintOptions(mfem::out);
 
-  //auto mesh = UnitSquare_Geo(ref_levels);
-  //auto mesh = UnitSquare_Geo_2Sinks(ref_levels);
-  //auto mesh = LShape_Homogeneous(ref_levels);
-  //auto mesh = LShape_Inhomo(ref_levels);
-  auto mesh = HeatSink(ref_levels);
+  Mesh mesh;
+  switch (problem_type) {
+    case 1:
+      mesh = UnitSquare_Geo(ref_levels);
+      break;
+    case 2:
+      mesh = UnitSquare_Geo_2Sinks(ref_levels);
+      break;
+    case 3:
+      mesh = LShape_Homogeneous(ref_levels);
+      break;
+    case 4:
+      mesh = LShape_Inhomo(ref_levels);
+      break;
+    case 5:
+      mesh = HeatSink(ref_levels);
+      break;
+  }
   int dim = mesh.Dimension();
 
   // 4. Define the necessary finite element spaces on the mesh.
@@ -280,10 +185,13 @@ int main(int argc, char *argv[]) {
   Array<int> nbc_bdr(maxat);
   ess_bdr = 0; nbc_bdr = 0;
 
-  // WITHOUT SOURCE
-  // ess_bdr[0] = 1; nbc_bdr[1] = 1;
-  // WITH SOURCE
-  ess_bdr[0] = 1; nbc_bdr[2] = 1;
+  std::vector<int> homog_nbc { 1, 2, 3 };
+  auto nbc_beg = homog_nbc.begin(); auto nbc_end = homog_nbc.end();
+  if (std::count(nbc_beg, nbc_end, problem_type)) {
+    ess_bdr[0] = 1; nbc_bdr[1] = 1;
+  } else {
+    ess_bdr[0] = 1; nbc_bdr[2] = 1;
+  }
 
   ConstantCoefficient one_cp(1.0);
   ConstantCoefficient zero_cp(0.0);
@@ -293,16 +201,17 @@ int main(int argc, char *argv[]) {
   DiffusionSolver *DiffSolver = new DiffusionSolver();
   DiffSolver->SetMesh(&mesh);
   DiffSolver->SetOrder(state_fec.GetOrder());
-  // f = 1
-  // DiffSolver->SetRHSCoefficient(&one_cp);
-  // f = 0
-  DiffSolver->SetRHSCoefficient(&zero_cp);
   DiffSolver->SetEssentialBoundary(ess_bdr);
-
-  // WITH SOURCE
-  DiffSolver->SetNeumannBoundary(nbc_bdr);
-  DiffSolver->SetNeumannData(&one_cp);
-
+  if (std::count(nbc_beg, nbc_end, problem_type)) { // Constant heating inside
+    DiffSolver->SetRHSCoefficient(&one_cp);
+  } else {
+    // Zero heating on interior
+    DiffSolver->SetRHSCoefficient(&zero_cp);
+    
+    // Set non-homogeneous Neumann BC accordingly
+    DiffSolver->SetNeumannBoundary(nbc_bdr);
+    DiffSolver->SetNeumannData(&one_cp);
+  }
   DiffSolver->SetupFEM();
 
   // 7. Set-up the filter solver.
