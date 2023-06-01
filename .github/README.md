@@ -1,4 +1,4 @@
-# Topology Optimization
+# Topology Optimization: Thermal Compliance
 
 MFEM topology optimization code for thermal compliance, implementing 5 simple problems.
 
