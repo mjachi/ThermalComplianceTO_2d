@@ -66,6 +66,9 @@ inline void clip(GridFunction &psi, const double max_val) {
   }
 }
 
+/**
+ * @brief Driving function.
+*/
 int main(int argc, char *argv[]) {
 
   // 1. Parse command-line options.
@@ -73,7 +76,7 @@ int main(int argc, char *argv[]) {
   // PARAMETERS
   int ref_levels = 4;          // # of mesh refinement levels
   int order = 2;               // Order of FE
-  double alpha = 0.1;          // Step size
+  double alpha = 0.01;          // Step size
   double epsilon = 0.01;       // Density filter radius
   double mass_fraction = 0.5;  // Mass fraction in Omega
   int max_it = 1e3;            // Maximum number of iterations for Newton solver in projection
